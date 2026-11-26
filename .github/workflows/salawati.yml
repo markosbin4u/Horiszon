@@ -28,6 +28,9 @@ jobs:
         working-directory: salawati
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The branch itself, so the log step can push to it.
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -50,14 +53,18 @@ jobs:
       # The prayer-time maths, the qibla and the settings reading have no platform
       # dependency, so they are checked here on every build.
       - name: Unit tests
-        run: flutter test
+        run: |
+          set -o pipefail
+          flutter test 2>&1 | tee ../salawati-build.log
 
       - name: Analyse
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze --no-fatal-infos 2>&1 | tee -a ../salawati-build.log
         continue-on-error: true
 
       - name: Build the APK
-        run: flutter build apk --release
+        run: |
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee -a ../salawati-build.log
 
       - name: Show what was built
         run: |
@@ -85,6 +92,26 @@ jobs:
             || gh release create "$tag" --title "صلواتي $tag" --notes-file /tmp/notes.md
           cp salawati/build/app/outputs/flutter-apk/app-release.apk salawati.apk
           gh release upload "$tag" salawati.apk --clobber
+
+      # Readable from anywhere: the log host is not reachable from every phone or agent.
+      - name: Publish the build log to the branch
+        if: always()
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          {
+            echo "# Salawati build log"
+            echo
+            echo "run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo
+            echo '```'
+            cat salawati-build.log 2>/dev/null || echo "no log: the build never started"
+            echo '```'
+          } > salawati-build-log.md
+          git add -f salawati-build-log.md
+          git diff --cached --quiet || git commit -q -m "ci: salawati build log for $GITHUB_SHA"
+          git push -q || echo "the log could not be pushed"
 
       - uses: actions/upload-artifact@v4
         if: always()
