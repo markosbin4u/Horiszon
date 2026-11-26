@@ -25,7 +25,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  # write: the last step commits the build log to the branch, because the log viewer and
+  # the artifact download both live on hosts a phone (or this agent) may not reach.
+  contents: write
 
 env:
   # One place to change if Horizon moves again.
@@ -36,6 +38,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The branch itself, so the log step can push to it (a pull request run checks out a
+          # detached merge commit by default).
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Read the SDK pin from Cargo.toml
         run: |
@@ -79,11 +85,13 @@ jobs:
       # rust-src if needed, builds mod.wasm, records it in the manifest's [wasm] table, and packs
       # target/horizon-mod/vein_miner.hmod.
       - name: Build mod.wasm and the .hmod package
-        run: cargo horizon-mod build --wasm
+        run: |
+          set -o pipefail
+          cargo horizon-mod build --wasm 2>&1 | tee build.log
 
       # The game's own checks on this mod: the manifest, the hooks it listens to, the settings.
       - name: The tool's own check on the mod
-        run: cargo horizon-mod check
+        run: cargo horizon-mod check 2>&1 | tee -a build.log
 
       - name: Show what was built
         run: |
@@ -93,7 +101,29 @@ jobs:
           sed -n '/^\[wasm/,/^\[/p' horizon-mod.toml | tee -a "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
+        if: hashFiles('target/horizon-mod/vein_miner.hmod') != ''
         with:
           name: vein_miner-hmod
           path: target/horizon-mod/vein_miner.hmod
           if-no-files-found: error
+
+      # Readable from anywhere: the whole build output as a file in the branch, since the
+      # log viewer and artifact downloads are not reachable for everyone (the player is on a
+      # phone; the agent's sandbox cannot open the log host at all).
+      - name: Publish the build log to the branch
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          {
+            echo "# build log"
+            echo
+            echo "run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo
+            echo '```'
+            cat build.log 2>/dev/null || echo "no build.log: the build never started"
+            echo '```'
+          } > ci-build-log.md
+          git add -f ci-build-log.md
+          git diff --cached --quiet || git commit -q -m "ci: build log for $GITHUB_SHA"
+          git push -q || echo "the log could not be pushed"
