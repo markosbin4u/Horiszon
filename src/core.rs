@@ -63,9 +63,9 @@ impl Connect {
     /// Every neighbour offset this mode connects through.
     pub fn offsets(self) -> Vec<[i32; 3]> {
         let mut out = Vec::with_capacity(26);
-        for dx in -1..=1 {
-            for dy in -1..=1 {
-                for dz in -1..=1 {
+        for dx in -1i32..=1 {
+            for dy in -1i32..=1 {
+                for dz in -1i32..=1 {
                     if dx == 0 && dy == 0 && dz == 0 {
                         continue;
                     }
