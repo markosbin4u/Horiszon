@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:salawati/core/next_prayer.dart';
 import 'package:salawati/core/prayer_times.dart';
 import 'package:salawati/services/settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
