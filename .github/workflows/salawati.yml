@@ -74,11 +74,15 @@ jobs:
         run: |
           tag="salawati-v$(grep -Po '^version: \K[0-9.]+' salawati/pubspec.yaml)"
           echo "Releasing $tag"
-          gh release view "$tag" > /dev/null 2>&1 \
-            || gh release create "$tag" --title "صلواتي $tag" \
-                 --notes "تطبيق صلواتي: مواقيت الصلاة والأذان والقبلة والأذكار والأدعية. يعمل بدون إنترنت.
+          # The notes live in a file, so YAML never sees their punctuation.
+          cat > /tmp/notes.md <<'NOTES'
+          تطبيق صلواتي: مواقيت الصلاة والأذان والقبلة والأذكار والأدعية. يعمل بدون إنترنت.
 
-**التثبيت:** نزّل salawati.apk وافتحه. إن رفض الهاتف التثبيت، اسمح بـ «تثبيت من مصادر غير معروفة» لهذا الملف."
+          التثبيت: نزّل salawati.apk وافتحه. إن رفض الهاتف التثبيت، اسمح بـ «تثبيت من مصادر
+          غير معروفة» لهذا الملف.
+          NOTES
+          gh release view "$tag" > /dev/null 2>&1 \
+            || gh release create "$tag" --title "صلواتي $tag" --notes-file /tmp/notes.md
           cp salawati/build/app/outputs/flutter-apk/app-release.apk salawati.apk
           gh release upload "$tag" salawati.apk --clobber
 
