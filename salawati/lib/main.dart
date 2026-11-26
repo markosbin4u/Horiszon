@@ -260,8 +260,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       if (!widget.settings.adhanPrayers.contains(entry.name)) continue;
       final at = timeOfDay(today.date, entry.hour);
       final key = '${entry.name}-${today.date.day}';
+      // A minute of grace rather than a second: the ticker can miss a beat while the
+      // phone is busy, and the adhan is better a few seconds late than not at all. The
+      // set makes sure a prayer is announced once.
       final elapsed = DateTime.now().difference(at).inSeconds;
-      if (elapsed >= 0 && elapsed < 2 && _announced.add(key)) {
+      if (elapsed >= 0 && elapsed < 60 && _announced.add(key)) {
         _adhan.play();
       }
     }

@@ -19,6 +19,9 @@ import zipfile
 
 EXPECTED_PACKAGE = "com.youcef.salawati"
 EXPECTED_ASSETS = [
+    # audioplayers resolves AssetSource('adhan.mp3') under the assets/ prefix, so a clip
+    # declared as an asset directory lands here; if it does not, the app is silent with
+    # no error at all, which is exactly what this test exists to catch.
     "assets/flutter_assets/assets/adhan.mp3",
     "assets/flutter_assets/fonts/Amiri-Regular.woff2",
     "assets/flutter_assets/fonts/Amiri-Bold.woff2",
