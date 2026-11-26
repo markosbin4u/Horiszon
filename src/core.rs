@@ -341,8 +341,8 @@ mod tests {
     fn a_vein_is_cut_at_the_limit() {
         let mut s = settings();
         s.max_blocks = 2;
-        let read = |p: Pos| -> Option<String> { Some(format!("minecraft:iron_ore@p{}", p[1])) };
-        let mut read = read;
+        // Every neighbour is the same ore, so the fill only stops at the limit.
+        let mut read = |_: Pos| -> Option<String> { Some("minecraft:iron_ore".to_owned()) };
         let vein = fill([0, 0, 0], "minecraft:iron_ore", s, &mut read);
         assert_eq!(vein.blocks.len(), 2);
         assert!(vein.truncated);
