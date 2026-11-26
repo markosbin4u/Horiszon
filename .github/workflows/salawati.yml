@@ -29,9 +29,6 @@ jobs:
         working-directory: salawati
     steps:
       - uses: actions/checkout@v4
-        with:
-          # The branch itself, so the log step can push to it.
-          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -116,11 +113,10 @@ jobs:
           cp salawati/build/app/outputs/flutter-apk/app-release.apk salawati.apk
           gh release upload "$tag" salawati.apk --clobber
 
-      # The build log lives on a host this repository's agents cannot reach, so the log is
-      # also published where plain `gh api` reads it: a comment on the pull request, with
-      # the versioned file as a fallback on push builds.
+      # The run log lives on a host this repository's agents cannot reach, so a failure is
+      # published as a collapsed comment on the pull request, which `gh api` can read.
       - name: Publish the build log
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
@@ -137,29 +133,7 @@ jobs:
             echo '```'
             echo '</details>'
           } > /tmp/comment.md
-
-          if [ -n "${{ github.event.pull_request.number }}" ]; then
-            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md \
-              && echo "commented on the pull request"
-          fi
-
-          # A second copy on the branch, for a build that has no pull request.
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          {
-            echo "# Salawati build log"
-            echo
-            echo "run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-            echo
-            echo '<pre>'
-            cat salawati-build.log 2>/dev/null || echo "no log: the build never started"
-            echo '</pre>'
-          } > "salawati-build-$GITHUB_RUN_ID.md"
-          git add -f "salawati-build-$GITHUB_RUN_ID.md"
-          git diff --cached --quiet || git commit -q -m "ci: salawati build log for run $GITHUB_RUN_ID"
-          # checkout leaves a detached HEAD, so name the branch explicitly.
-          git push -q origin "HEAD:refs/heads/${{ github.head_ref || github.ref_name }}" \
-            || echo "the log file could not be pushed; the comment above is the record"
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md
 
       - uses: actions/upload-artifact@v4
         if: always()

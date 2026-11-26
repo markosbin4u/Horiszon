@@ -28,11 +28,18 @@ class SalaatiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'صلواتي',
-      debugShowCheckedModeBanner: false,
-      theme: _theme(Brightness.dark),
-      home: HomePage(settings: settings),
+    // The chosen mode is read here and rebuilt when it changes, so the switch in the
+    // settings screen has a visible effect.
+    return AnimatedBuilder(
+      animation: settings,
+      builder: (context, _) => MaterialApp(
+        title: 'صلواتي',
+        debugShowCheckedModeBanner: false,
+        theme: _theme(Brightness.light),
+        darkTheme: _theme(Brightness.dark),
+        themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light,
+        home: HomePage(settings: settings),
+      ),
     );
   }
 
@@ -957,10 +964,19 @@ class _SettingsPageState extends State<SettingsPage> {
                       ? (on) => settings.setAdhanPrayer(prayer, on)
                       : null,
                 ),
-              ListTile(
-                leading: const Icon(Icons.timer),
-                title: const Text('الحد الأدنى للتنبيه'),
-                trailing: Text('${settings.preReminderMinutes}'),
+              const _SectionHeader('التنبيهات'),
+              const ListTile(
+                leading: Icon(Icons.notifications_off_outlined),
+                title: Text('تنبيهات خارج التطبيق غير مفعّلة'),
+                subtitle: Text(
+                    'هذه النسخة تُشغّل الأذان عندما يكون التطبيق مفتوحاً فقط. '
+                    'تنبيه الصلاة والهاتف في الجيب يحتاج خدمة في الخلفية، وهي غير مضافة بعد.'),
+              ),
+              SwitchListTile(
+                secondary: const Icon(Icons.dark_mode),
+                title: const Text('الوضع الليلي'),
+                value: settings.darkMode,
+                onChanged: settings.setDarkMode,
               ),
               const _SectionHeader('عن التطبيق'),
               const ListTile(

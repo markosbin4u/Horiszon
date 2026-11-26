@@ -17,8 +17,6 @@ class AppSettings extends ChangeNotifier {
   static const _kMethod = 'method';
   static const _kHanafi = 'hanafi_asr';
   static const _kAdhan = 'adhan_enabled';
-  static const _kNotify = 'notify_enabled';
-  static const _kPreReminder = 'pre_reminder_minutes';
   static const _kAdhanPrayers = 'adhan_prayers';
   static const _kDark = 'dark_mode';
 
@@ -29,14 +27,11 @@ class AppSettings extends ChangeNotifier {
   CalcMethod method = CalcMethod.mwl;
   bool hanafiAsr = false;
   bool adhanEnabled = true;
-  bool notifyEnabled = true;
-
-  /// How many minutes before a prayer a reminder is shown (0 turns it off).
-  int preReminderMinutes = 10;
 
   /// The prayers the adhan plays for.
   Set<String> adhanPrayers = {'fajr', 'dhuhr', 'asr', 'maghrib', 'isha'};
 
+  /// Dark by default: the app is mostly used at dawn and at night.
   bool darkMode = true;
 
   /// True once a real location has been saved (otherwise the place is the fallback).
@@ -53,8 +48,6 @@ class AppSettings extends ChangeNotifier {
     );
     hanafiAsr = _prefs.getBool(_kHanafi) ?? hanafiAsr;
     adhanEnabled = _prefs.getBool(_kAdhan) ?? adhanEnabled;
-    notifyEnabled = _prefs.getBool(_kNotify) ?? notifyEnabled;
-    preReminderMinutes = _prefs.getInt(_kPreReminder) ?? preReminderMinutes;
     darkMode = _prefs.getBool(_kDark) ?? darkMode;
     final adhan = _prefs.getStringList(_kAdhanPrayers);
     if (adhan != null) adhanPrayers = adhan.toSet();
@@ -87,18 +80,6 @@ class AppSettings extends ChangeNotifier {
     adhanEnabled = value;
     notifyListeners();
     await _prefs.setBool(_kAdhan, value);
-  }
-
-  Future<void> setNotifyEnabled(bool value) async {
-    notifyEnabled = value;
-    notifyListeners();
-    await _prefs.setBool(_kNotify, value);
-  }
-
-  Future<void> setPreReminder(int minutes) async {
-    preReminderMinutes = minutes;
-    notifyListeners();
-    await _prefs.setInt(_kPreReminder, minutes);
   }
 
   Future<void> setAdhanPrayer(String prayer, bool on) async {
