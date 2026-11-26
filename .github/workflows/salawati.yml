@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   build:
@@ -107,11 +108,34 @@ jobs:
           cp salawati/build/app/outputs/flutter-apk/app-release.apk salawati.apk
           gh release upload "$tag" salawati.apk --clobber
 
-      # Readable from anywhere: the log host is not reachable from every phone or agent.
-      - name: Publish the build log to the branch
+      # The build log lives on a host this repository's agents cannot reach, so the log is
+      # also published where plain `gh api` reads it: a comment on the pull request, with
+      # the versioned file as a fallback on push builds.
+      - name: Publish the build log
         if: always()
         working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          {
+            echo '### Salawati build'
+            echo
+            echo "\`${{ github.event_name }}\` on \`${{ github.sha }}\`"
+            echo
+            echo '<details><summary>log</summary>'
+            echo
+            echo '```'
+            tail -c 40000 salawati-build.log 2>/dev/null || echo "no log: the build never started"
+            echo '```'
+            echo '</details>'
+          } > /tmp/comment.md
+
+          if [ -n "${{ github.event.pull_request.number }}" ]; then
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md \
+              && echo "commented on the pull request"
+          fi
+
+          # A second copy on the branch, for a build that has no pull request.
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           {
@@ -119,14 +143,15 @@ jobs:
             echo
             echo "run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo
-            echo '```'
+            echo '<pre>'
             cat salawati-build.log 2>/dev/null || echo "no log: the build never started"
-            echo '```'
+            echo '</pre>'
           } > "salawati-build-$GITHUB_RUN_ID.md"
-          # One file per run: a rebase can never bring back an older run's log.
           git add -f "salawati-build-$GITHUB_RUN_ID.md"
           git diff --cached --quiet || git commit -q -m "ci: salawati build log for run $GITHUB_RUN_ID"
-          git push -q || (git pull -q --rebase && git push -q) || echo "the log could not be pushed"
+          # checkout leaves a detached HEAD, so name the branch explicitly.
+          git push -q origin "HEAD:refs/heads/${{ github.head_ref || github.ref_name }}" \
+            || echo "the log file could not be pushed; the comment above is the record"
 
       - uses: actions/upload-artifact@v4
         if: always()
