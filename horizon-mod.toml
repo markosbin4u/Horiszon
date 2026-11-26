@@ -1,0 +1,12 @@
+id = "vein_miner"
+name = "Vein Miner"
+version = "0.1.0"
+description = "Break connected blocks of the same type (ores, logs, etc.) automatically."
+authors = ["YOUCEF"]
+license = "MIT"
+api = "0.2"
+side = "server"
+capabilities = ["registries"]
+
+[native]
+minecraft = "26.3"
