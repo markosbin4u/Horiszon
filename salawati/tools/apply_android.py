@@ -23,6 +23,10 @@ import sys
 PACKAGE = "com.youcef.salawati"
 LABEL = "صلواتي"
 MIN_SDK = 23
+# AndroidX libraries that geolocator and audioplayers pull in demand compiling against 34+,
+# and a plugin's own module is compiled against whatever the app asks for, so the app asks
+# for the newest platform the runner's SDK ships.
+COMPILE_SDK = 36
 
 PERMISSIONS = """    <!-- The position is what the prayer times and the qibla are computed from. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -48,6 +52,14 @@ def fix_gradle(path: pathlib.Path) -> None:
                     "namespace")
     text = sub_once(r'applicationId\s*=\s*"[^"]*"', f'applicationId = "{PACKAGE}"', text,
                     "applicationId")
+    # compileSdk: the template writes flutter.compileSdkVersion.
+    if "compileSdk = flutter.compileSdkVersion" in text:
+        text = text.replace("compileSdk = flutter.compileSdkVersion",
+                            f"compileSdk = {COMPILE_SDK}")
+    elif "compileSdkVersion flutter.compileSdkVersion" in text:
+        text = text.replace("compileSdkVersion flutter.compileSdkVersion",
+                            f"compileSdkVersion {COMPILE_SDK}")
+
     # minSdk: the template writes either flutter.minSdkVersion or a literal.
     if "minSdk = flutter.minSdkVersion" in text:
         text = text.replace("minSdk = flutter.minSdkVersion", f"minSdk = {MIN_SDK}")
@@ -65,7 +77,8 @@ def fix_gradle(path: pathlib.Path) -> None:
             "buildTypes",
         )
     path.write_text(text)
-    print(f"apply_android: {path} -> {PACKAGE}, minSdk {MIN_SDK}, debug-signed release")
+    print(f"apply_android: {path} -> {PACKAGE}, compileSdk {COMPILE_SDK}, "
+          f"minSdk {MIN_SDK}, debug-signed release")
 
 
 def fix_manifest(path: pathlib.Path) -> None:

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:salawati/core/next_prayer.dart';
 import 'package:salawati/core/prayer_times.dart';
 import 'package:salawati/core/qibla.dart';
+import 'package:salawati/main.dart' show cities;
 
 /// Minutes-since-midnight of a fractional hour, rounded the way the app rounds it.
 int minutes(double? hour) {
@@ -169,6 +170,28 @@ void main() {
         enabled: {'asr', 'maghrib', 'isha'},
       );
       expect(next!.name, 'asr');
+    });
+  });
+
+  group('distance', () {
+    test('a point is zero kilometres from itself', () {
+      expect(distanceKm(35.5559, 6.1741, 35.5559, 6.1741), closeTo(0, 0.001));
+    });
+
+    test('one degree of latitude is about 111 km', () {
+      expect(distanceKm(35.0, 6.0, 36.0, 6.0), closeTo(111.2, 0.5));
+    });
+
+    test('the settings cities are far enough apart to be told apart', () {
+      // The nearest-city label would be useless if two entries sat on top of each other.
+      for (var i = 0; i < cities.length; i++) {
+        for (var j = i + 1; j < cities.length; j++) {
+          final a = cities[i];
+          final b = cities[j];
+          expect(distanceKm(a.lat, a.lng, b.lat, b.lng), greaterThan(5),
+              reason: '${a.name} and ${b.name}');
+        }
+      }
     });
   });
 

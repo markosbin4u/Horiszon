@@ -12,8 +12,6 @@ dependencies:
   # The device's position, and its compass for the qibla.
   geolocator: ^13.0.2
   flutter_compass: ^0.8.0
-  # A city name for the coordinates (falls back to the coordinates offline).
-  geocoding: ^3.0.0
   # The player's choices survive a restart.
   shared_preferences: ^2.3.3
   # The adhan clip, and the Arabic font.

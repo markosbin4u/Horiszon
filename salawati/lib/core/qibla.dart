@@ -23,12 +23,17 @@ double qiblaBearing(double latitude, double longitude) {
 }
 
 /// The great-circle distance to the Kaaba in kilometres (haversine).
-double qiblaDistanceKm(double latitude, double longitude) {
+double qiblaDistanceKm(double latitude, double longitude) =>
+    distanceKm(latitude, longitude, kaabaLatitude, kaabaLongitude);
+
+/// The great-circle distance between two points in kilometres, on a spherical Earth of
+/// mean radius. Good to about half a percent, which is far finer than any use in the app.
+double distanceKm(double fromLat, double fromLng, double toLat, double toLng) {
   const earthRadiusKm = 6371.0088;
-  final phi1 = _radians(latitude);
-  final phi2 = _radians(kaabaLatitude);
-  final dPhi = _radians(kaabaLatitude - latitude);
-  final dLambda = _radians(kaabaLongitude - longitude);
+  final phi1 = _radians(fromLat);
+  final phi2 = _radians(toLat);
+  final dPhi = _radians(toLat - fromLat);
+  final dLambda = _radians(toLng - fromLng);
   final a = math.sin(dPhi / 2) * math.sin(dPhi / 2) +
       math.cos(phi1) * math.cos(phi2) * math.sin(dLambda / 2) * math.sin(dLambda / 2);
   return 2 * earthRadiusKm * math.atan2(math.sqrt(a), math.sqrt(1 - a));

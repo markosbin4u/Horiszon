@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_compass/flutter_compass.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -128,7 +127,7 @@ class AppState extends ChangeNotifier {
       );
       latitude = position.latitude;
       longitude = position.longitude;
-      place = await _placeName(latitude, longitude);
+      place = _placeName(latitude, longitude);
       await settings.setLocation(latitude, longitude, place);
       recalculate();
     } catch (e) {
@@ -139,20 +138,21 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<String> _placeName(double lat, double lng) async {
-    try {
-      final marks = await placemarkFromCoordinates(lat, lng);
-      if (marks.isNotEmpty) {
-        final m = marks.first;
-        final parts = <String>[
-          if ((m.locality ?? '').isNotEmpty) m.locality!,
-          if ((m.country ?? '').isNotEmpty) m.country!,
-        ];
-        if (parts.isNotEmpty) return parts.join('، ');
+  /// A short label for a position: the nearest known city when it is close, coordinates
+  /// otherwise. This is done from the app's own city list rather than the platform
+  /// geocoder, which needs Play services, a network round trip, and a plugin that pins an
+  /// older compileSdk than the other plugins want.
+  String _placeName(double lat, double lng) {
+    ({String name, double lat, double lng})? nearest;
+    var best = double.infinity;
+    for (final city in cities) {
+      final d = distanceKm(lat, lng, city.lat, city.lng);
+      if (d < best) {
+        best = d;
+        nearest = city;
       }
-    } catch (_) {
-      // Offline, or no geocoder on the device: coordinates are still a fine label.
     }
+    if (nearest != null && best <= 35) return nearest.name;
     return '${lat.toStringAsFixed(3)}، ${lng.toStringAsFixed(3)}';
   }
 
@@ -825,19 +825,9 @@ class _DuaPageState extends State<DuaPage> {
 }
 
 /// The settings screen: location, calculation method, adhan, reminders.
-class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key, required this.state, required this.settings});
-
-  final AppState state;
-  final AppSettings settings;
-
-  @override
-  State<SettingsPage> createState() => _SettingsPageState();
-}
-
-class _SettingsPageState extends State<SettingsPage> {
-  /// The cities offered for a manual choice, with their coordinates.
-  static const _cities = <({String name, double lat, double lng})>[
+/// The cities the settings screen offers for a manual choice, with their coordinates.
+/// Also used to turn a GPS fix into a readable label: the nearest one within 35 km.
+const List<({String name, double lat, double lng})> cities = <({String name, double lat, double lng})>[
     (name: 'باتنة، الجزائر', lat: 35.5559, lng: 6.1741),
     (name: 'الجزائر العاصمة', lat: 36.7538, lng: 3.0588),
     (name: 'قسنطينة', lat: 36.3650, lng: 6.6147),
@@ -855,6 +845,19 @@ class _SettingsPageState extends State<SettingsPage> {
     (name: 'تونس', lat: 36.8065, lng: 10.1815),
     (name: 'الرباط', lat: 34.0209, lng: -6.8416),
   ];
+
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key, required this.state, required this.settings});
+
+  final AppState state;
+  final AppSettings settings;
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+
 
   @override
   Widget build(BuildContext context) {
@@ -895,7 +898,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 trailing: DropdownButton<({String name, double lat, double lng})>(
                   hint: const Text('المدينة'),
                   items: <DropdownMenuItem<({String name, double lat, double lng})>>[
-                    for (final city in _cities)
+                    for (final city in cities)
                       DropdownMenuItem<({String name, double lat, double lng})>(
                           value: city, child: Text(city.name)),
                   ],
