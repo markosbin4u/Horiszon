@@ -29,7 +29,8 @@
 
 - المستودع: `github.com/markosbin4u/Horiszon`
 - الفرع الحالي: `arena/8c86d73c-horiszon` (من `main` عند `60bda52`)
-- Pull Request: `#1` — https://github.com/markosbin4u/Horiszon/pull/1
+- Pull Request: `#1` — **مدموج** في `main`
+- العمل كله موجود أيضاً على `main`؛ وأي push إلى `main` يعيد البناء ويُحدّث الـ Release
 
 ### ملفات المود (كلها في جذر المستودع)
 ```
@@ -38,8 +39,10 @@ Cargo.toml                              الحزمة + تثبيت SDK في [pack
 src/core.rs                             قواعد المود بدون أي اعتماد على اللعبة + اختبارات
 src/lib.rs                              سطح الـ API: register / break_block / server_tick
 assets/vein_miner/lang/en_us.json       نصوص صفحة الإعدادات
-.github/workflows/build.yml             بناء على Linux + رفع vein_miner.hmod
+.github/workflows/build.yml             بناء على Linux + اختبارات + Release + سجل
 .gitignore                              .horizon/ و target/
+HANDOFF.md                              هذا الملف
+ci-build-log.md                         يُكتب تلقائياً من CI (لا يُحرَّر يدوياً)
 ```
 
 `lib.rs` القديم في الجذر (API وهمي: `host.tool_break_block`, `player.is_sneaking()`) حُذف —
@@ -121,7 +124,7 @@ SettingSpec::choice(key, label, [options…], default_index)
 
 ---
 
-## 5. حالة البناء (CI)
+## 5. حالة البناء — تمّ بنجاح ✅
 
 الـ workflow القديم كان يفشل عند أول خطوة:
 ```
@@ -130,49 +133,53 @@ cargo install --locked --git https://github.com/horizon-rust/horizon cargo-horiz
 ```
 السبب: `horizon-rust/horizon` لم يبقَ موجوداً. المشروع الآن في `arismoko/horizon`.
 
-الـ workflow الحالي:
+### الـ workflow النهائي (`.github/workflows/build.yml`)
 1. يقرأ تثبيت SDK من `Cargo.toml`.
-2. يجلب **تلك الـ commit بالذات** من `arismoko/horizon` ويبني `cargo-horizon-mod` منها
+2. يجلب **تلك الـ commit بالذات** من `arismoko/horizon` ويبني `cargo-horizon-mod`
    (`--release --locked`) — الأداة والـ SDK يجب أن يكونا نفس البناء.
-3. يشغّل `cargo horizon-mod build --wasm` (الأداة تنزّل الـ SDK إلى `.horizon/sdk/` وتثبّت
-   Rust 1.99.1 مع `rust-src` بنفسها، وتبني std من المصدر عبر `-Zbuild-std`).
-4. يشغّل `cargo horizon-mod check`.
-5. يرفع `target/horizon-mod/vein_miner.hmod` كـ artifact باسم `vein_miner-hmod`.
+3. `cargo horizon-mod build --wasm` → الأداة تنزّل الـ SDK إلى `.horizon/sdk/`، وتثبّت
+   Rust 1.99.1 مع `rust-src` بنفسها، وتبني std من المصدر (`-Zbuild-std`)، وتُخرج
+   `target/horizon-mod/vein_miner.hmod`.
+4. `cargo "+1.99.1" test --lib` → 15 اختبار (`core` + الإعدادات)، كلها ناجحة.
+5. `cargo horizon-mod check` — **استشارية** (`continue-on-error`): تُعيد تصريف المود
+   لـ wasm32 بدون `-Zbuild-std`، وهذه السلسلة لا تحمل std مبنية مسبقاً لـ wasm32، فتفشل
+   بـ `E0463` على `serde_core` حتى للمود السليم. ليست خطأ في المود.
+6. عند push إلى `main`: يُنشئ Release ويعلّق الملف عليه.
+7. في كل الحالات: يكتب `ci-build-log.md` في الفرع (لأن سجلّ التشغيل وملف الـ artifact
+   يستخدمان نطاقات قد لا تُفتح من الهاتف ولا من الساندبوكس).
 
-ملاحظة: `workflow_dispatch` غير متاح للـ GitHub App المستخدم هنا (403)، لذلك البناء يُشغَّل
-بفتح Pull Request — والـ workflow يستمع إلى `pull_request`.
+### أخطاء واجهناها وأُصلحت
+| الخطأ | الإصلاح |
+|---|---|
+| `error[E0689]: can't call method abs on ambiguous numeric type` ×3 في `core.rs:72` | حلقات الجيران صارت `-1i32..=1` |
+| اختبار `a_vein_is_cut_at_the_limit` يفشل (`left: 0`) | كان الـ fixture يُرجع `minecraft:iron_ore@pN`، وهذا ليس id خامة، فرفض `same_vein` كل جار. صار يُرجع `minecraft:iron_ore` |
+| خطوة `check` تفشل بـ `E0463` | صارت استشارية؛ البناء الحقيقي هو ما كتب sha512 في المانيفست |
 
-### أين نُقلع الآن
-آخر تشغيل: https://github.com/markosbin4u/Horiszon/actions/runs/45892116964
-(PR #1، job `140157045142`). الخطوات التي نجحت: checkout، قراءة التثبيت، الكاش.
-الخطوة الجارية: **Build cargo-horizon-mod at the SDK commit** (بناء الأداة من المصدر يستغرق
-عدة دقائق). بعدها تُبنى `mod.wasm` وننتظر الـ artifact.
-
----
-
-## 6. الخطوة التالية بالضبط
-
-1. افتح `gh run list` / صفحة Actions، وانتظر انتهاء `45892116964`.
-2. إن نجح: نزّل `vein_miner-hmod` من صفحة التشغيل، وفك الضغط → `vein_miner.hmod`.
-3. إن فشل في `cargo horizon-mod build --wasm`: الرسالة ستكون خطأ Rust في `src/lib.rs`.
-   أشهر احتمال: import أو توقيع دالة تغيّر بين إصدارات الـ SDK. عندئذٍ:
-   - تحقّق من الاسم في الـ SDK نفسه داخل التشغيل (`.horizon/sdk/api/crates/horizon-mod-vocab/src/…`)،
-   - لا تعتمد على الذاكرة: الملفات موجودة في الـ runner بعد فشل الخطوة.
-4. بعد نجاح الـ artifact: تُنشر الحزمة في Release ليكون الرابط ثابتاً للهاتف:
-   `gh release create v1.0.0 target/horizon-mod/vein_miner.hmod`
-   (لا يعمل رفع الـ artifact من متصفح الهاتف بدون تسجيل دخول، أما رابط Release فمباشر.)
+### المخرَج
+- Release: **https://github.com/markosbin4u/Horiszon/releases/tag/v1.0.0**
+- تحميل مباشر (يُفتح من متصفح الهاتف):
+  **https://github.com/markosbin4u/Horiszon/releases/download/v1.0.0/vein_miner.hmod**
+- الحجم: 2,667,734 بايت. آخر تشغيل ناجح على `main`: https://github.com/markosbin4u/Horiszon/actions/runs/45895283054
+- PR #1 مدموج في `main`.
 
 ### التثبيت على الهاتف
-1. نزّل `vein_miner.hmod`.
-2. في Horizon: نسخة اللعبة ⋮ ← **Open folder** ← مجلد `horizon-mods/`.
-3. انسخ الملف هناك.
-4. بجانب `options.txt` يوجد `horizon-mods.txt` — أضف سطراً:
+1. افتح رابط التحميل أعلاه ونزّل `vein_miner.hmod`.
+2. في Horizon: نسخة اللعبة ← **Mods**، أو من نظام الملفات إلى مجلد اللعبة (الذي فيه `options.txt`)
+   ← أنشئ/افتح `horizon-mods/` ← انسخ الملف هناك.
+   (مودات WebAssembly `.hmod` تُوضع في `horizon-mods/` — وليس `horizon-native-mods/`.)
+3. أضف سطراً في `horizon-mods.txt` بجانب `options.txt`:
    ```
    mod.vein_miner:true
    ```
-5. شغّل اللعبة. الإعدادات: **Options > Mods > Vein Miner > Config**.
+   (المود المنسوخ يدوياً يبدأ مطفأً؛ السطر `mod.<id>:true` هو ما يشتّغله.)
+4. شغّل اللعبة، ثم: **Options > Mods > Vein Miner > Config** للإعدادات.
 
----
+> ملاحظة للمستخدم: `.hmod` **حزمة مود** (داخلها `mod.wasm` + المانيفست + النصوص)، وليست
+> تطبيق أندرويد ولا تُثبَّت من مدير التطبيقات.
+
+### إن أردت بناءً جديداً بعد أي تعديل
+ادفع إلى `main` (أو افتح PR) — البناء يعمل تلقائياً، ويُحدّث الـ Release إن تغيّر رقم
+`version` في `horizon-mod.toml`.
 
 ## 7. أفخاخ واجهناها (لا تُعاد)
 
