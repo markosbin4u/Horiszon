@@ -86,6 +86,14 @@ jobs:
           ls -l build/app/outputs/flutter-apk/
           sha256sum build/app/outputs/flutter-apk/app-release.apk
 
+      # A green build only proves an APK exists. This proves it is the right one: the adhan
+      # audio and the Amiri font inside, the package name, and compiled Dart.
+      - name: Check the APK's contents
+        run: |
+          set -o pipefail
+          python3 tools/verify_apk.py build/app/outputs/flutter-apk/app-release.apk \
+            2>&1 | tee -a ../salawati-build.log
+
       # One direct link for the phone:
       #   https://github.com/markosbin4u/Horiszon/releases/latest/download/salawati.apk
       - name: Attach the APK to a release
