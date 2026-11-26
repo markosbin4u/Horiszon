@@ -38,9 +38,11 @@ def main(argv: list[str]) -> int:
             elif apk.getinfo(asset).file_size == 0:
                 problems.append(f"empty in the APK: {asset}")
 
-        # The binary manifest is not XML, but the package name sits in it as a plain string.
+        # The manifest is Android's binary XML: its string pool holds names in UTF-16LE, so
+        # the package name is there in that encoding, not as ASCII.
         manifest = apk.read("AndroidManifest.xml")
-        if EXPECTED_PACKAGE.encode() not in manifest:
+        wanted = EXPECTED_PACKAGE.encode("utf-16-le")
+        if wanted not in manifest:
             problems.append(f"the manifest does not name {EXPECTED_PACKAGE}")
 
         dex = [n for n in names if n.endswith(".dex")]
