@@ -1,6 +1,6 @@
 # build log
 
-run: https://github.com/markosbin4u/Horiszon/actions/runs/45893112940
+run: https://github.com/markosbin4u/Horiszon/actions/runs/45893814761
 
 ```
 SDK 4dc6455 (build 4dc6455d4a6773224792eb1f121a9b939dff3170) in ./.horizon/sdk
@@ -15,8 +15,8 @@ info: downloading 5 components
  Downloading crates ...
   Downloaded cfg-if v1.0.4
   Downloaded getopts v0.2.24
-  Downloaded addr2line v0.27.1
   Downloaded dlmalloc v0.2.14
+  Downloaded addr2line v0.27.1
   Downloaded rustc-literal-escaper v0.0.8
   Downloaded gimli v0.34.0
   Downloaded object v0.39.1
@@ -26,21 +26,21 @@ info: downloading 5 components
    Compiling libc v0.2.189
    Compiling object v0.39.1
    Compiling std v0.0.0 (/home/runner/.rustup/toolchains/1.99.1-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std)
-   Compiling libc v0.2.191
    Compiling proc-macro2 v1.0.107
-   Compiling zerocopy v0.8.66
+   Compiling libc v0.2.191
    Compiling quote v1.0.47
    Compiling unicode-ident v1.0.27
+   Compiling zerocopy v0.8.66
    Compiling serde_core v1.0.229
    Compiling cfg-if v1.0.5
    Compiling zmij v1.0.23
-   Compiling getrandom v0.2.17
    Compiling syn v3.0.10
+   Compiling getrandom v0.2.17
    Compiling rand_core v0.6.4
    Compiling siphasher v1.0.4
    Compiling phf_shared v0.11.3
-   Compiling serde_json v1.0.154
    Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
    Compiling serde_derive v1.0.229
    Compiling libm v0.2.16
    Compiling ppv-lite86 v0.2.21
@@ -52,8 +52,8 @@ info: downloading 5 components
    Compiling phf_codegen v0.11.3
    Compiling unicode_names2_generator v2.0.0
    Compiling syn v2.0.119
-   Compiling unicode_names2 v2.0.0
    Compiling bytemuck_derive v1.12.1
+   Compiling unicode_names2 v2.0.0
    Compiling horizon-mod-vocab v0.1.0 (/home/runner/work/Horiszon/Horiszon/.horizon/sdk/api/crates/horizon-mod-vocab)
    Compiling horizon-mod-api v0.1.0 (/home/runner/work/Horiszon/Horiszon/.horizon/sdk/api/crates/horizon-mod-api)
    Compiling horizon-mod-point-shape v0.1.0 (/home/runner/work/Horiszon/Horiszon/.horizon/sdk/api/crates/horizon-mod-point-shape)
@@ -70,47 +70,88 @@ info: downloading 5 components
    Compiling rustc-std-workspace-alloc v1.99.0 (/home/runner/.rustup/toolchains/1.99.1-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/rustc-std-workspace-alloc)
    Compiling panic_unwind v0.0.0 (/home/runner/.rustup/toolchains/1.99.1-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/panic_unwind)
    Compiling gimli v0.34.0
+   Compiling miniz_oxide v0.9.1
    Compiling hashbrown v0.17.1
    Compiling std_detect v0.1.5 (/home/runner/.rustup/toolchains/1.99.1-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std_detect)
-   Compiling miniz_oxide v0.9.1
    Compiling addr2line v0.27.1
    Compiling proc_macro v0.0.0 (/home/runner/.rustup/toolchains/1.99.1-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/proc_macro)
    Compiling phf v0.11.3
    Compiling log v0.4.35
-   Compiling glam v0.30.10
    Compiling bytemuck v1.25.2
+   Compiling glam v0.30.10
    Compiling horizon-core v0.1.0 (/home/runner/work/Horiszon/Horiszon/.horizon/sdk/api/crates/horizon-core)
    Compiling horizon-mod-runtime v0.1.0 (/home/runner/work/Horiszon/Horiszon/.horizon/sdk/api/crates/horizon-mod-runtime)
    Compiling vein-miner v1.0.0 (/home/runner/work/Horiszon/Horiszon/target/horizon-mod/group/vein_miner)
-error[E0689]: can't call method `abs` on ambiguous numeric type `{integer}`
-  --> vein_miner/src/core.rs:72:39
-   |
-66 |         for dx in -1..=1 {
-   |             -- you must specify a type for this binding, like `i32`
-...
-72 |                     let touching = dx.abs() + dy.abs() + dz.abs();
-   |                                       ^^^
+    Finished `horizon-wasm` profile [optimized] target(s) in 1m 10s
+Built ./target/horizon-mod/vein_miner.hmod
+   Compiling proc-macro2 v1.0.107
+   Compiling libc v0.2.191
+   Compiling zerocopy v0.8.66
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling cfg-if v1.0.5
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling siphasher v1.0.4
+   Compiling syn v3.0.10
+   Compiling phf_shared v0.11.3
+   Compiling serde_json v1.0.154
+   Compiling getrandom v0.2.17
+   Compiling serde v1.0.229
+   Compiling rand_core v0.6.4
+   Compiling serde_derive v1.0.229
+   Compiling libm v0.2.16
+    Checking phf v0.11.3
+   Compiling ppv-lite86 v0.2.21
+   Compiling itoa v1.0.19
+   Compiling memchr v2.8.3
+   Compiling rand_chacha v0.3.1
+   Compiling rand v0.8.8
+   Compiling phf_generator v0.11.3
+   Compiling phf_codegen v0.11.3
+   Compiling unicode_names2_generator v2.0.0
+   Compiling syn v2.0.119
+   Compiling unicode_names2 v2.0.0
+   Compiling bytemuck_derive v1.12.1
+   Compiling horizon-mod-vocab v0.1.0 (/home/runner/work/Horiszon/Horiszon/.horizon/sdk/api/crates/horizon-mod-vocab)
+    Checking bytemuck v1.25.2
+    Checking glam v0.30.10
+    Checking log v0.4.35
+   Compiling horizon-mod-api v0.1.0 (/home/runner/work/Horiszon/Horiszon/.horizon/sdk/api/crates/horizon-mod-api)
+   Compiling horizon-mod-point-shape v0.1.0 (/home/runner/work/Horiszon/Horiszon/.horizon/sdk/api/crates/horizon-mod-point-shape)
+   Compiling horizon-mod-api-macros v0.1.0 (/home/runner/work/Horiszon/Horiszon/.horizon/sdk/api/crates/horizon-mod-api-macros)
+    Checking horizon-core v0.1.0 (/home/runner/work/Horiszon/Horiszon/.horizon/sdk/api/crates/horizon-core)
+    Checking horizon-mod-runtime v0.1.0 (/home/runner/work/Horiszon/Horiszon/.horizon/sdk/api/crates/horizon-mod-runtime)
+    Checking vein-miner v1.0.0 (/home/runner/work/Horiszon/Horiszon)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 15.02s
+   Compiling proc-macro2 v1.0.107
+   Compiling libc v0.2.191
+   Compiling unicode-ident v1.0.27
+   Compiling zerocopy v0.8.66
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling cfg-if v1.0.5
+   Compiling zmij v1.0.23
+   Compiling siphasher v1.0.4
+   Compiling syn v3.0.10
+   Compiling phf_shared v0.11.3
+   Compiling getrandom v0.2.17
+   Compiling serde_json v1.0.154
+   Compiling rand_core v0.6.4
+   Compiling serde v1.0.229
+error[E0463]: can't find crate for `core`
+  |
+  = note: the `wasm32-unknown-unknown` target may not be installed
+  = help: consider downloading the target with `rustup target add wasm32-unknown-unknown`
 
-error[E0689]: can't call method `abs` on ambiguous numeric type `{integer}`
-  --> vein_miner/src/core.rs:72:50
-   |
-67 |             for dy in -1..=1 {
-   |                 -- you must specify a type for this binding, like `i32`
-...
-72 |                     let touching = dx.abs() + dy.abs() + dz.abs();
-   |                                                  ^^^
+error[E0463]: can't find crate for `std`
+  |
+  = note: the `wasm32-unknown-unknown` target may not be installed
+  = help: consider downloading the target with `rustup target add wasm32-unknown-unknown`
 
-error[E0689]: can't call method `abs` on ambiguous numeric type `{integer}`
-  --> vein_miner/src/core.rs:72:61
-   |
-68 |                 for dz in -1..=1 {
-   |                     -- you must specify a type for this binding, like `i32`
-...
-72 |                     let touching = dx.abs() + dy.abs() + dz.abs();
-   |                                                             ^^^
-
-For more information about this error, try `rustc --explain E0689`.
-error: rustc failed: exit status: 1
-error: could not compile `vein-miner` (lib) due to 3 previous errors
-error: Cargo group build failed
+For more information about this error, try `rustc --explain E0463`.
+error: could not compile `serde_core` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `siphasher` (lib) due to 1 previous error
+error: cargo check for wasm32-unknown-unknown failed
 ```
