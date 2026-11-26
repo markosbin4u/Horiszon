@@ -1,0 +1,17 @@
+{
+  "vein_miner.setting.enabled": "Vein Miner",
+  "vein_miner.setting.enabled.tooltip": "Off breaks one block at a time, as vanilla does.",
+  "vein_miner.setting.require_sneak": "Only while sneaking",
+  "vein_miner.setting.require_sneak.tooltip": "On: hold Shift to vein-mine, and a plain break takes one block. Off (the default): every break of an ore or a log takes the whole vein.",
+  "vein_miner.setting.max_blocks": "Blocks per vein",
+  "vein_miner.setting.max_blocks.tooltip": "The most blocks one break may take. The rest of a longer vein is left standing.",
+  "vein_miner.setting.mine_ores": "Mine ores",
+  "vein_miner.setting.mine_ores.tooltip": "Ores, deepslate ores and ancient debris: all connected ones of the same kind.",
+  "vein_miner.setting.mine_logs": "Mine logs",
+  "vein_miner.setting.mine_logs.tooltip": "Logs, wood, stems and hyphae of the same tree kind. Leaves are left to the game.",
+  "vein_miner.setting.connect": "Connect through",
+  "vein_miner.setting.connect.tooltip": "Which neighbours belong to a vein. Diagonals catch veins that run corner to corner.",
+  "vein_miner.setting.connect.faces": "Touching faces",
+  "vein_miner.setting.connect.faces_and_edges": "Faces and edges",
+  "vein_miner.setting.connect.all": "Faces, edges and corners"
+}

@@ -1,12 +1,13 @@
 id = "vein_miner"
 name = "Vein Miner"
-version = "0.1.0"
-description = "Break connected blocks of the same type (ores, logs, etc.) automatically."
+version = "1.0.0"
+description = "Breaking one ore or log mines the whole connected vein with your own tool: normal drops, Fortune, Silk Touch and tool wear. Works without sneak, with its own settings page."
 authors = ["YOUCEF"]
 license = "MIT"
+# A WebAssembly code mod
+# `cargo horizon-mod build --wasm` against the SDK build Cargo.toml pins.
+# Works in the launcher on Android and on desktop: no compiler is needed to play.
 api = "0.2"
-side = "server"
+side = "both"
+# registries: "May add blocks, items, mob effects and entity types to your worlds".
 capabilities = ["registries"]
-
-[native]
-minecraft = "26.3"

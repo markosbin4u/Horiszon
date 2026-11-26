@@ -1,10 +1,22 @@
 [package]
-name = "vein_miner"
-version = "0.1.0"
+name = "vein-miner"
+version = "1.0.0"
 edition = "2024"
-
-[lib]
-crate-type = ["cdylib", "rlib"]
+publish = false
+description = "Vein Miner for Horizon: breaking one ore or log mines the whole connected vein."
+license = "MIT"
 
 [dependencies]
-horizon-mod-api = { path = ".horizon/sdk/horizon-mod-api" }
+# The pinned SDK's API crate, fetched into .horizon/sdk/ by any `cargo horizon-mod` command.
+horizon-mod-api = { path = ".horizon/sdk/api/crates/horizon-mod-api" }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+# The SDK build this mod is made for: `cargo horizon-mod update` moves it.
+# Nightly 2026-11-15 (4dc6455).
+[package.metadata.horizon]
+sdk = "4dc6455d4a6773224792eb1f121a9b939dff3170"
+
+# A mod is its own project, not a member of the game's workspace.
+[workspace]
