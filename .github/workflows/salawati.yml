@@ -1,0 +1,161 @@
+# Builds «صلواتي» into an installable APK and puts it on a GitHub Release, so the phone can
+# download it from one plain link with no sign-in.
+#
+# Everything lives in salawati/, so it does not disturb the Horizon mod at the repository
+# root. The workflow only runs when a file under salawati/ changes.
+name: Build Salawati APK
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'salawati/**'
+      - '.github/workflows/salawati.yml'
+  pull_request:
+    paths:
+      - 'salawati/**'
+      - '.github/workflows/salawati.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: salawati
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The branch itself, so the log step can push to it.
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      # The platform folder is generated, never hand-written: Flutter's own template is the
+      # source of truth for the Gradle, AGP and lockfile versions a given Flutter wants. A
+      # template's app/ is a whole project, so it is built in a scratch folder and only
+      # android/ is copied back; then the app's identity, permissions and icon are applied.
+      - name: Generate the Android project from Flutter's template
+        run: |
+          set -eu
+          rm -rf android
+          (cd "$RUNNER_TEMP" && flutter create --org com.youcef --project-name salawati salawati_template)
+          cp -r "$RUNNER_TEMP/salawati_template/android" ./android
+          rm -rf ./android/app/src/main/kotlin ./android/app/src/main/java
+          mkdir -p ./android/app/src/main/kotlin/com/youcef/salawati
+          cp android_res/kotlin_MainActivity.kt ./android/app/src/main/kotlin/com/youcef/salawati/MainActivity.kt
+          cp -r android_res/mipmap-* ./android/app/src/main/res/
+          python3 tools/apply_android.py android
+
+      - name: Fetch packages
+        run: flutter pub get
+
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          flutter test 2>&1 | tee ../salawati-build.log
+
+      - name: Analyse
+        run: flutter analyze --no-fatal-infos 2>&1 | tee -a ../salawati-build.log
+        continue-on-error: true
+
+      - name: Build the APK
+        run: |
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee -a ../salawati-build.log
+
+      - name: Show what was built
+        run: |
+          ls -l build/app/outputs/flutter-apk/
+          sha256sum build/app/outputs/flutter-apk/app-release.apk
+
+      # One direct link for the phone:
+      #   https://github.com/markosbin4u/Horiszon/releases/latest/download/salawati.apk
+      - name: Attach the APK to a release
+        if: github.event_name == 'push'
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="salawati-v$(grep -Po '^version: \K[0-9.]+' salawati/pubspec.yaml)"
+          echo "Releasing $tag"
+          # The notes live in a file, so YAML never sees their punctuation.
+          cat > /tmp/notes.md <<'NOTES'
+          تطبيق صلواتي: مواقيت الصلاة والأذان والقبلة والأذكار والأدعية. يعمل بدون إنترنت.
+
+          التثبيت: نزّل salawati.apk وافتحه. إن رفض الهاتف التثبيت، اسمح بـ «تثبيت من مصادر
+          غير معروفة» لهذا الملف.
+          NOTES
+          gh release view "$tag" > /dev/null 2>&1 \
+            || gh release create "$tag" --title "صلواتي $tag" --notes-file /tmp/notes.md
+          cp salawati/build/app/outputs/flutter-apk/app-release.apk salawati.apk
+          gh release upload "$tag" salawati.apk --clobber
+
+      # The build log lives on a host this repository's agents cannot reach, so the log is
+      # also published where plain `gh api` reads it: a comment on the pull request, with
+      # the versioned file as a fallback on push builds.
+      - name: Publish the build log
+        if: always()
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '### Salawati build'
+            echo
+            echo "\`${{ github.event_name }}\` on \`${{ github.sha }}\`"
+            echo
+            echo '<details><summary>log</summary>'
+            echo
+            echo '```'
+            tail -c 40000 salawati-build.log 2>/dev/null || echo "no log: the build never started"
+            echo '```'
+            echo '</details>'
+          } > /tmp/comment.md
+
+          if [ -n "${{ github.event.pull_request.number }}" ]; then
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md \
+              && echo "commented on the pull request"
+          fi
+
+          # A second copy on the branch, for a build that has no pull request.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          {
+            echo "# Salawati build log"
+            echo
+            echo "run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo
+            echo '<pre>'
+            cat salawati-build.log 2>/dev/null || echo "no log: the build never started"
+            echo '</pre>'
+          } > "salawati-build-$GITHUB_RUN_ID.md"
+          git add -f "salawati-build-$GITHUB_RUN_ID.md"
+          git diff --cached --quiet || git commit -q -m "ci: salawati build log for run $GITHUB_RUN_ID"
+          # checkout leaves a detached HEAD, so name the branch explicitly.
+          git push -q origin "HEAD:refs/heads/${{ github.head_ref || github.ref_name }}" \
+            || echo "the log file could not be pushed; the comment above is the record"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: salawati-apk
+          path: salawati/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: warn

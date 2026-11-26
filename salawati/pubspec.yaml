@@ -1,0 +1,37 @@
+name: salawati
+description: "صلواتي: مواقيت الصلاة، الأذان، القبلة، والأذكار والأدعية. يعمل بدون إنترنت."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # The device's position, and its compass for the qibla.
+  geolocator: ^13.0.2
+  flutter_compass: ^0.8.0
+  # The player's choices survive a restart.
+  shared_preferences: ^2.3.3
+  # The adhan clip, and the Arabic font.
+  audioplayers: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+
+  # Amiri (SIL OFL 1.1): the Arabic face the app draws its text in.
+  fonts:
+    - family: Amiri
+      fonts:
+        - asset: fonts/Amiri-Regular.woff2
+          weight: 400
+        - asset: fonts/Amiri-Bold.woff2
+          weight: 700
