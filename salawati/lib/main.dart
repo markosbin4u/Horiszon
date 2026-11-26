@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -890,13 +890,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.city),
+                leading: const Icon(Icons.location_city),
                 title: const Text('اختيار مدينة يدوياً'),
                 trailing: DropdownButton<({String name, double lat, double lng})>(
                   hint: const Text('المدينة'),
-                  items: [
+                  items: <DropdownMenuItem<({String name, double lat, double lng})>>[
                     for (final city in _cities)
-                      DropdownMenuItem(value: city, child: Text(city.name)),
+                      DropdownMenuItem<({String name, double lat, double lng})>(
+                          value: city, child: Text(city.name)),
                   ],
                   onChanged: (city) async {
                     if (city == null) return;

@@ -88,10 +88,12 @@ enum CalcMethod {
   /// 1.0 for the majority (Shafi'i) school, 2.0 for the Hanafi school.
   final double asrFactor;
 
-  /// Minutes between Maghrib and Isha, for a method that fixes it.
-  int? get ishaMinutes {
-    return this == CalcMethod.ummAlQura ? 90 : null;
-  }
+  /// Minutes between Maghrib and Isha, for a method that fixes it rather than using an
+  /// angle.
+  int? get ishaMinutes => switch (this) {
+        CalcMethod.ummAlQura => 90,
+        _ => null,
+      };
 }
 
 /// The six prayer times of one day, as hours since local midnight (fractional).

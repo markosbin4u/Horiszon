@@ -47,11 +47,25 @@ jobs:
       - name: Flutter version
         run: flutter --version
 
+      # The platform folder is generated, never hand-written: Flutter's own template is the
+      # source of truth for the Gradle, AGP and lockfile versions a given Flutter wants. A
+      # template's app/ is a whole project, so it is built in a scratch folder and only
+      # android/ is copied back; then the app's identity, permissions and icon are applied.
+      - name: Generate the Android project from Flutter's template
+        run: |
+          set -eu
+          rm -rf android
+          (cd "$RUNNER_TEMP" && flutter create --org com.youcef --project-name salawati salawati_template)
+          cp -r "$RUNNER_TEMP/salawati_template/android" ./android
+          rm -rf ./android/app/src/main/kotlin ./android/app/src/main/java
+          mkdir -p ./android/app/src/main/kotlin/com/youcef/salawati
+          cp android_res/kotlin_MainActivity.kt ./android/app/src/main/kotlin/com/youcef/salawati/MainActivity.kt
+          cp -r android_res/mipmap-* ./android/app/src/main/res/
+          python3 tools/apply_android.py android
+
       - name: Fetch packages
         run: flutter pub get
 
-      # The prayer-time maths, the qibla and the settings reading have no platform
-      # dependency, so they are checked here on every build.
       - name: Unit tests
         run: |
           set -o pipefail
