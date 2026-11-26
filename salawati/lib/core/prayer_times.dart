@@ -1,12 +1,10 @@
-import 'dart:math' as math;
-
 /// Prayer-time mathematics (the standard astronomical method: solar declination and
 /// equation of time from a low-precision solar position, then hour angles for each
 /// prayer's sun depression).
 ///
 /// No package does this: the formulas are short, well known, and keeping them here means
 /// they are unit-testable in plain Dart with no platform channels.
-library;
+import 'dart:math' as math;
 
 double _sin(double degrees) => math.sin(degrees * math.pi / 180.0);
 double _cos(double degrees) => math.cos(degrees * math.pi / 180.0);

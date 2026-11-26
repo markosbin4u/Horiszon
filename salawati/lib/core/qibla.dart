@@ -1,9 +1,7 @@
-import 'dart:math' as math;
-
 /// The direction of the Kaaba from anywhere on Earth (the initial great-circle bearing,
 /// on a spherical Earth: accurate well within a degree, which is finer than a phone's
 /// magnetometer).
-library;
+import 'dart:math' as math;
 
 /// Kaaba coordinates: 21°25'21.0"N, 39°49'34.0"E.
 const double kaabaLatitude = 21.4224779;
