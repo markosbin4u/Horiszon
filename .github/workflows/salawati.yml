@@ -1,0 +1,90 @@
+# Builds «صلواتي» into an installable APK and puts it on a GitHub Release, so the phone can
+# download it from one plain link with no sign-in.
+#
+# Everything lives in salawati/, so it does not disturb the Horizon mod at the repository
+# root. The workflow only runs when a file under salawati/ changes.
+name: Build Salawati APK
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'salawati/**'
+      - '.github/workflows/salawati.yml'
+  pull_request:
+    paths:
+      - 'salawati/**'
+      - '.github/workflows/salawati.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: salawati
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Fetch packages
+        run: flutter pub get
+
+      # The prayer-time maths, the qibla and the settings reading have no platform
+      # dependency, so they are checked here on every build.
+      - name: Unit tests
+        run: flutter test
+
+      - name: Analyse
+        run: flutter analyze --no-fatal-infos
+        continue-on-error: true
+
+      - name: Build the APK
+        run: flutter build apk --release
+
+      - name: Show what was built
+        run: |
+          ls -l build/app/outputs/flutter-apk/
+          sha256sum build/app/outputs/flutter-apk/app-release.apk
+
+      # One direct link for the phone:
+      #   https://github.com/markosbin4u/Horiszon/releases/latest/download/salawati.apk
+      - name: Attach the APK to a release
+        if: github.event_name == 'push'
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="salawati-v$(grep -Po '^version: \K[0-9.]+' salawati/pubspec.yaml)"
+          echo "Releasing $tag"
+          gh release view "$tag" > /dev/null 2>&1 \
+            || gh release create "$tag" --title "صلواتي $tag" \
+                 --notes "تطبيق صلواتي: مواقيت الصلاة والأذان والقبلة والأذكار والأدعية. يعمل بدون إنترنت.
+
+**التثبيت:** نزّل salawati.apk وافتحه. إن رفض الهاتف التثبيت، اسمح بـ «تثبيت من مصادر غير معروفة» لهذا الملف."
+          cp salawati/build/app/outputs/flutter-apk/app-release.apk salawati.apk
+          gh release upload "$tag" salawati.apk --clobber
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: salawati-apk
+          path: salawati/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: warn
