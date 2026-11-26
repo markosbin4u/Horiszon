@@ -1,0 +1,3 @@
+# The SDK `cargo horizon-mod` fetches here, and anything it builds.
+.horizon/
+target/

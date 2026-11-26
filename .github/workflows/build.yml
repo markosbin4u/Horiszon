@@ -1,34 +1,99 @@
+# Builds Vein Miner to mod.wasm on Linux and uploads vein_miner.hmod as a workflow artifact.
+#
+# How to get the file on a phone:
+#   1. Actions tab > "Build Horizon Mod (.hmod)" > newest green run > Artifacts > vein_miner-hmod
+#   2. Unzip it: that is vein_miner.hmod
+#   3. Copy it into the instance's horizon-mods/ folder, add `mod.vein_miner:true` to
+#      horizon-mods.txt beside options.txt, and restart the game.
+#
+# What a Horizon WebAssembly mod needs, per Horizon's own modding book (docs/modding):
+#   * the SDK build pinned in Cargo.toml ([package.metadata.horizon] sdk)
+#   * cargo-horizon-mod built from that same build, never from a branch
+#   * the toolchain in tools/ci/rust-version, with rust-src; `build --wasm` installs it itself
+#     through rustup and builds std from source (-Zbuild-std)
+#   * a Linux build: a wasm built on Windows is refused by the game
+#
+# The earlier version of this workflow failed at "Install cargo-horizon-mod" because it
+# installed from https://github.com/horizon-rust/horizon, a repository that no longer resolves.
+# Horizon now lives at arismoko/horizon, and the tool is built from the pinned commit.
 name: Build Horizon Mod (.hmod)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
+  pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # One place to change if Horizon moves again.
+  HORIZON_REPO: https://github.com/arismoko/horizon
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-24.04
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain (1.95.0)
-        uses: dtolnay/rust-toolchain@master
+      - name: Read the SDK pin from Cargo.toml
+        run: |
+          sdk=$(grep -Po '^sdk = "\K[0-9a-f]{40}(?=")' Cargo.toml)
+          if [ -z "$sdk" ]; then
+            echo "::error file=Cargo.toml::no [package.metadata.horizon] sdk pin found"
+            exit 1
+          fi
+          echo "HORIZON_SDK=$sdk" >> "$GITHUB_ENV"
+          echo "Building against SDK $sdk"
+
+      - name: Cache cargo-horizon-mod
+        id: tool
+        uses: actions/cache@v4
         with:
-          toolchain: "1.95.0"
-          targets: wasm32-unknown-unknown
+          path: ~/.local/horizon-tool/bin
+          key: cargo-horizon-mod-${{ env.HORIZON_SDK }}
 
-      - name: Install cargo-horizon-mod
+      # Built from the pinned commit, not from a branch: the tool and the SDK must be one build,
+      # or the layout it downloads will not match what it expects.
+      - name: Build cargo-horizon-mod at the SDK commit
+        if: steps.tool.outputs.cache-hit != 'true'
         run: |
-          cargo +1.95.0 install --locked --git https://github.com/horizon-rust/horizon cargo-horizon-mod
+          git init -q "$RUNNER_TEMP/horizon"
+          cd "$RUNNER_TEMP/horizon"
+          git fetch -q --depth 1 "$HORIZON_REPO.git" "$HORIZON_SDK"
+          git checkout -q FETCH_HEAD
+          echo "Horizon build: $(git rev-parse HEAD)"
+          # tools/ci/rust-version is what the game and every wasm mod are built with.
+          echo "wasm Rust: $(cat tools/ci/rust-version)"
+          cargo build --release --locked -p cargo-horizon-mod
+          mkdir -p ~/.local/horizon-tool/bin
+          cp target/release/cargo-horizon-mod ~/.local/horizon-tool/bin/
 
-      - name: Build .hmod (WebAssembly)
+      - name: Put the tool on PATH
         run: |
-          cargo +1.95.0 horizon-mod build --wasm
+          echo "$HOME/.local/horizon-tool/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/horizon-tool/bin/cargo-horizon-mod" --help > /dev/null || true
 
-      - name: Upload vein_miner.hmod artifact
-        uses: actions/upload-artifact@v4
+      # The mod itself: fetches the pinned SDK into .horizon/sdk/, installs the pinned Rust with
+      # rust-src if needed, builds mod.wasm, records it in the manifest's [wasm] table, and packs
+      # target/horizon-mod/vein_miner.hmod.
+      - name: Build mod.wasm and the .hmod package
+        run: cargo horizon-mod build --wasm
+
+      # The game's own checks on this mod: the manifest, the hooks it listens to, the settings.
+      - name: The tool's own check on the mod
+        run: cargo horizon-mod check
+
+      - name: Show what was built
+        run: |
+          ls -l target/horizon-mod/
+          sha256sum target/horizon-mod/vein_miner.hmod | tee -a "$GITHUB_STEP_SUMMARY"
+          # The [wasm] table the tool wrote: its hash and the toolchain every linked mod shares.
+          sed -n '/^\[wasm/,/^\[/p' horizon-mod.toml | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
         with:
           name: vein_miner-hmod
           path: target/horizon-mod/vein_miner.hmod
+          if-no-files-found: error
